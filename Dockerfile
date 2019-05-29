@@ -1,4 +1,4 @@
-FROM cptactionhank/atlassian-jira-service-desk:4.0.2
+FROM cptactionhank/atlassian-jira-service-desk:latest
 
 USER 0
 
