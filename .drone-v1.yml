@@ -1,0 +1,42 @@
+---
+kind: pipeline
+type: kubernetes
+name: default
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+- name: build
+  pull: if-not-exists
+  image: quay.io/ukhomeofficedigital/drone-docker
+  commands:
+  - docker build -t docker-atlassian-jira-all:$${DRONE_COMMIT_SHA} .
+  when:
+    event:
+    - push
+
+- name: image_to_quay
+  pull: if-not-exists
+  image: quay.io/ukhomeofficedigital/drone-docker
+  settings:
+    registry: quay.io
+    repo: quay.io/ukhomeofficedigital/docker-atlassian-jira-all
+    tags:
+    - ${DRONE_COMMIT_SHA}
+    - latest
+    - v4.8.0
+  environment:
+    DOCKER_PASSWORD:
+      from_secret: DOCKER_PASSWORD
+    DOCKER_USERNAME:
+      from_secret: DOCKER_USERNAME
+  when:
+    branch:
+    - master
+    event:
+    - push
+    - promote
+
+...
