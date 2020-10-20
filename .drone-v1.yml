@@ -12,7 +12,11 @@ steps:
   pull: if-not-exists
   image: quay.io/ukhomeofficedigital/drone-docker
   commands:
+  - n=0; while [ "$n " -lt 60 ] && [ ! -e /var/run/docker.sock ]; do n=$(( n + 1 )); sleep 1; done
   - docker build -t docker-atlassian-jira-all:$${DRONE_COMMIT_SHA} .
+  volumes:
+  - name: dockersock
+    path: /var/run
   when:
     event:
     - push
@@ -38,5 +42,24 @@ steps:
     event:
     - push
     - promote
+
+services:
+- name: docker
+  image: quay.io/ukhomeofficedigital/drone-docker
+  volumes:
+  - name: dockersock
+    path: /var/run
+
+- name: anchore-submission-server
+  image: quay.io/ukhomeofficedigital/anchore-submission:latest
+  commands:
+  - /anchore-submission server
+  volumes:
+  - name: dockersock
+    path: /var/run
+
+volumes:
+- name: dockersock
+  temp: {}
 
 ...
