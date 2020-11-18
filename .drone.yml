@@ -17,7 +17,7 @@ pipeline:
     tags:
       - ${DRONE_COMMIT_SHA}
       - latest
-      - v4.8.0
+      - v4.13.1
     when:
       branch: master
       event: [ push, deployment ]
