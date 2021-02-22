@@ -1,23 +1,52 @@
-pipeline:
+---
+kind: pipeline
+type: kubernetes
+name: default
 
-  build:
-    image: quay.io/ukhomeofficedigital/drone-docker
-    commands:
-      - docker build -t docker-atlassian-jira-all:$${DRONE_COMMIT_SHA} .
-    when:
-      event: push
+platform:
+  os: linux
+  arch: amd64
 
-  image_to_quay:
-    image: quay.io/ukhomeofficedigital/drone-docker
-    secrets:
-      - DOCKER_USERNAME
-      - DOCKER_PASSWORD
+steps:
+- name: build
+  pull: always
+  image: 340268328991.dkr.ecr.eu-west-2.amazonaws.com/acp/dind
+  commands:
+  - n=0; while [ "$n" -lt 60 ] && [ ! docker stats --no-stream ]; do n=$(( n + 1 )); sleep 1; done
+  - docker build -t docker-atlassian-jira-all:$${DRONE_COMMIT_SHA} .
+  when:
+    event:
+    - push
+
+- name: image_to_quay
+  image: plugins/docker
+  settings:
     registry: quay.io
     repo: quay.io/ukhomeofficedigital/docker-atlassian-jira-all
     tags:
-      - ${DRONE_COMMIT_SHA}
-      - latest
-      - v4.13.1
-    when:
-      branch: master
-      event: [ push, deployment ]
+    - ${DRONE_COMMIT_SHA}
+    - latest
+    - v4.8.0
+  environment:
+    DOCKER_PASSWORD:
+      from_secret: DOCKER_PASSWORD
+    DOCKER_USERNAME:
+      from_secret: DOCKER_USERNAME
+  when:
+    branch:
+    - master
+    event:
+    - push
+    - promote
+
+services:
+- name: docker
+  image: 340268328991.dkr.ecr.eu-west-2.amazonaws.com/acp/dind
+
+- name: anchore-submission-server
+  pull: always
+  image: 340268328991.dkr.ecr.eu-west-2.amazonaws.com/acp/anchore-submission:latest
+  commands:
+  - /run.sh server
+
+...
